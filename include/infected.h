@@ -1,0 +1,13 @@
+#include "infected_socket.h"
+
+#define INFECTED_VERSION_MAJOR 0
+#define INFECTED_VERSION_MINOR 1
+#define INFECTED_VERSION_PATCH 0
+
+#define INFECTED_MAKE_VERSION(major, minor, patch) \
+	((major) * 10000 + (minor) * 100 + (patch))
+
+#define INFECTED_VERSION \
+	INFECTED_MAKE_VERSION(INFECTED_VERSION_MAJOR, \
+		INFECTED_VERSION_MINOR, \
+		INFECTED_VERSION_PATCH)
