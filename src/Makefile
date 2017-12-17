@@ -2,7 +2,7 @@ IDIR =../include
 ODIR=obj
 
 MAKE = make
-CC = /usr/local/Cellar/gcc/7.2.0/bin/gcc-7 # C compiler
+CC = /usr/bin/gcc
 CFLAGS = -I$(IDIR) -fPIC -Wall -Wextra -O2 -g # C flags
 LDFLAGS = -shared  # linking flags
 
