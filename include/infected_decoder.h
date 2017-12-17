@@ -3,15 +3,17 @@
 
 #include <stdlib.h>
 
-#define INFECTED_BARKER 0xcafe
-#define INFECTED_BARKER_SIZE 2
-#define INFECTED_CRC_SIZE 2
+#define INFECTED_BARKER_SIZE sizeof(uint16_t)
+#define INFECTED_CRC_SIZE sizeof(uint16_t)
 #define INFECTED_FRAME_HEADER_SIZE 5 /* Barker, Size HEC */
 #define INFECTED_CONTENT_HEADER_SIZE 5 /* DST, SRC, Flags */
 #define INFECTED_HEADER_SIZE (INFECTED_FRAME_HEADER_SIZE + INFECTED_CONTENT_HEADER_SIZE)
 
 #define INFECTED_MIN_FRAME_SIZE (INFECTED_HEADER_SIZE + INFECTED_CRC_SIZE)
 #define INFECTED_MAX_FRAME_SIZE 1600
+
+#define ARRAY_SIZE(array) \
+	(sizeof(array) / sizeof(array[0]))
 
 enum infected_decoder_error {
 	NO_ERROR = 0,

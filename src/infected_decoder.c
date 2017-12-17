@@ -3,9 +3,9 @@
 #include <assert.h>
 #include <errno.h>
 
+#include "debug.h"
 #include "infected_decoder.h"
-
-static char infected_barker[2] = {0xca, 0xfe};
+#include "infected_decoder_private.h"
 
 #define max(a,b) \
 	({ __typeof__ (a) _a = (a); \
@@ -17,28 +17,12 @@ static char infected_barker[2] = {0xca, 0xfe};
 		__typeof__ (b) _b = (b); \
 		_a <= _b ? _a : _b; })
 
-enum infected_decoder_state {
-	BARKER,
-	SIZE,
-	CONTENT_CRC,
-};
-
-struct infected_decoder {
-	size_t				size;
-	size_t				read_next;
-	enum infected_decoder_state	state;
-	char				*buf;
-	char				*read_head;
-	char				*write_head;
-	infected_decoder_valid_frame_cb	on_frame;
-	infected_decoder_error_cb	on_error;
-	struct infected_frame frame;
-};
+char infected_barker[2] = {0xca, 0xfe};
 
 static inline void __decoder_reset_state(struct infected_decoder *decoder)
 {
 	decoder->state = BARKER;
-	decoder->read_next = sizeof(infected_barker);
+	decoder->required_bytes = sizeof(infected_barker);
 	decoder->frame.content = NULL;
 	decoder->frame.size = 0;
 }
@@ -46,6 +30,14 @@ static inline void __decoder_reset_state(struct infected_decoder *decoder)
 static inline size_t __decoder_available_bytes(struct infected_decoder *decoder)
 {
 	return (size_t)(decoder->write_head - decoder->read_head);
+}
+
+static inline void __decoder_consume(struct infected_decoder *decoder, size_t size)
+{
+	debug_print("want to consume %zu bytes, available %zu\n",
+		size, __decoder_available_bytes(decoder));
+	assert(size <= __decoder_available_bytes(decoder));
+	decoder->read_head += size;
 }
 
 static size_t __decoder_write(struct infected_decoder *decoder,
@@ -65,48 +57,39 @@ static inline void __on_error(struct infected_decoder *decoder,
 		decoder->on_error(decoder, error);
 }
 
+static inline void __decoder_realign(struct infected_decoder *decoder)
+{
+	char *p = decoder->read_head;
+	size_t size = decoder->write_head - p;
+
+	if (p == decoder->buf || !size)
+		return;
+	infected_decoder_reset(decoder);
+	__decoder_write(decoder, p, size);
+}
+
 static void __decoder_find_barker(struct infected_decoder *decoder)
 {
-	char *found = NULL, *last = decoder->write_head - 1;
+	int missing;
 
-	while (__decoder_available_bytes(decoder) >= sizeof(infected_barker)) {
-		if (decoder->read_head[0] == infected_barker[0] &&
-				decoder->read_head[1] == infected_barker[1]) {
-			found = decoder->read_head;
-			break;
-		} else {
-			decoder->read_head +=
-				(decoder->read_head[1] == infected_barker[0]) ?
-				1 : sizeof(infected_barker);
-		}
-	}
-
-	if (found != NULL) {
-		printf("Barker found\n");
-		if (found > decoder->buf) {
-			/* Align the barker on the buffer start */
-			infected_decoder_reset(decoder);
-			__decoder_write(decoder, found, last - found + 1);
-		}
-		decoder->read_head += sizeof(infected_barker);
+	debug_print("read head: 0x%hhx%hhx\n", decoder->read_head[0], decoder->read_head[1]);
+	if (decoder->read_head[0] == infected_barker[0] &&
+			decoder->read_head[1] == infected_barker[1]) {
+		debug_print("%s\n", "Barker found");
+		__decoder_realign(decoder);
+		__decoder_consume(decoder, sizeof(infected_barker));
 		decoder->state = SIZE;
-		decoder->read_next = 3; /* Size(2) + HEC(1) */
+		decoder->required_bytes = 3; /* Size(2) + HEC(1) */
 		return;
 	}
 
-	/**
-	 * if the last available byte is the first byte of the barker, we copy
-	 * it as the beginning of the buffer and wait for the next batch of
-	 * data.
-	 */
-	if (*last == infected_barker[0]) {
-		infected_decoder_reset(decoder);
-		__decoder_write(decoder, last, sizeof(char));
-		decoder->read_next = 1; /* we are missing only one byte */
-		return;
-	}
+	debug_print("%s\n", "Barker not found");
+	missing = (decoder->read_head[1] == infected_barker[0]) ? 1 : sizeof(infected_barker);
+	__decoder_consume(decoder, missing);
 
-	decoder->read_next = sizeof(infected_barker);
+	if (__decoder_available_bytes(decoder) < decoder->required_bytes) {
+		__decoder_realign(decoder);
+	}
 }
 
 static int __decoder_verify_size(struct infected_decoder *decoder, uint16_t *size, uint8_t hec)
@@ -123,7 +106,7 @@ static void __decoder_size_state(struct infected_decoder *decoder)
 	hec = *(uint8_t *)(decoder->read_head + sizeof(uint16_t));
 
 	if (__decoder_verify_size(decoder, &size, hec)) {
-		printf("Size corrupted beyond repair\n");
+		debug_print("%s\n", "Size corrupted beyond repair");
 		/**
 		 * Reset the state, but don't discard any data. As long as the
 		 * size is not verified, we are still looking for a frame.
@@ -133,9 +116,21 @@ static void __decoder_size_state(struct infected_decoder *decoder)
 		__decoder_reset_state(decoder);
 		return;
 	}
-	decoder->read_head += (sizeof(size) + sizeof(hec));
-	printf("size=%hd, HEC=%hd\n", size, hec);
-	if (size < INFECTED_MIN_FRAME_SIZE) {
+	__decoder_consume(decoder, sizeof(size) + sizeof(hec));
+	debug_print("size=%hd, HEC=%hd\n", size, hec);
+
+	if (size < INFECTED_CONTENT_HEADER_SIZE + INFECTED_CRC_SIZE) {
+		/* Incomplete frame */
+		debug_print("incomplete frame, size=%hd\n", size);
+		__decoder_reset_state(decoder);
+		__on_error(decoder, INVALID_SIZE);
+		return;
+	}
+
+	if (size > infected_decoder_free_space(decoder) +
+			__decoder_available_bytes(decoder)) {
+		/* Frame cannot fit in the given buffer */
+		debug_print("frame too big, size=%hd\n", size);
 		__decoder_reset_state(decoder);
 		__on_error(decoder, INVALID_SIZE);
 		return;
@@ -143,9 +138,9 @@ static void __decoder_size_state(struct infected_decoder *decoder)
 
 	decoder->frame.content = (struct infected_content *)decoder->read_head;
 	/* Adjust the frame size so it will reflect only the payload size */
-	decoder->frame.size = size - sizeof(uint16_t) - sizeof(struct infected_content);
+	decoder->frame.size = size - INFECTED_CRC_SIZE - INFECTED_CONTENT_HEADER_SIZE;
 	decoder->state = CONTENT_CRC;
-	decoder->read_next = size;
+	decoder->required_bytes = size;
 }
 
 static int __verify_crc(const void *buf, size_t size, uint16_t crc)
@@ -159,17 +154,17 @@ static void __decoder_read_content(struct infected_decoder *decoder)
 	uint16_t crc;
 
 	/* When this function is invoked, all the data is already available */
-	decoder->read_head += sizeof(struct infected_content) + decoder->frame.size;
+	__decoder_consume(decoder, sizeof(struct infected_content) + decoder->frame.size);
 	crc = htons(*(uint16_t *)(decoder->read_head));
-	decoder->read_head += sizeof(crc);
+	__decoder_consume(decoder, sizeof(crc));
 
 	if (__verify_crc(decoder->frame.content, decoder->frame.size, crc)) {
-		printf("CRC Error\n");
+		debug_print("%s\n", "CRC Error");
 		__on_error(decoder, CRC_ERROR);
 		goto out;
 	}
 
-	printf("valid frame found\n");
+	debug_print("%s\n", "valid frame found");
 	if (decoder->on_frame) {
 		decoder->on_frame(decoder, decoder->frame);
 	}
@@ -180,7 +175,9 @@ out:
 
 void __decoder_decode(struct infected_decoder *decoder)
 {
-	while (__decoder_available_bytes(decoder) >= decoder->read_next) {
+	while (__decoder_available_bytes(decoder) >= decoder->required_bytes) {
+		debug_print("available data: %zu bytes\n", __decoder_available_bytes(decoder));
+		debug_print("required: %zu bytes\n", decoder->required_bytes);
 		switch (decoder->state) {
 		case BARKER:
 			__decoder_find_barker(decoder);
@@ -196,11 +193,15 @@ void __decoder_decode(struct infected_decoder *decoder)
 			break;
 		}
 	}
+
+	if (decoder->state == BARKER && decoder->read_head != decoder->buf) {
+
+	}
 }
 
 inline size_t infected_decoder_read_next(struct infected_decoder *decoder)
 {
-	return decoder->read_next;
+	return decoder->required_bytes - __decoder_available_bytes(decoder);
 }
 
 inline char * infected_decoder_write_head(struct infected_decoder *decoder)
@@ -229,7 +230,7 @@ void infected_decoder_set_buffer(
 		struct infected_decoder *decoder,
 		char *buf, size_t size)
 {
-	assert(size > INFECTED_MIN_FRAME_SIZE);
+	assert(size >= INFECTED_MIN_FRAME_SIZE);
 	decoder->buf = buf;
 	decoder->size = size;
 	infected_decoder_reset(decoder);
@@ -255,7 +256,6 @@ size_t infected_decoder_write(struct infected_decoder *decoder,
 {
 	size_t ret = __decoder_write(decoder, buf, size);
 
-	printf("wrote %ld bytes to the decoder\n", ret);
 	__decoder_decode(decoder);
 	return ret;
 }
