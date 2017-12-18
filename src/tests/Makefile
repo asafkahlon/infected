@@ -1,7 +1,6 @@
 PROJDIR = ../..
 IDIR = $(PROJDIR)/include
 
-CC = /usr/bin/gcc
 CFLAGS = -I$(IDIR) -I$(PROJDIR)/src -fPIC -Wall -Wextra -g # C flags
 LDFLAGS = -L$(PROJDIR)/src -linfected_decoder -lcunit # linking flags
 

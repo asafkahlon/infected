@@ -1,3 +1,11 @@
 language: c
+
+addons:
+  apt:
+    packages:
+      - libcunit1
+      - libcunit1-doc
+      - libcunit1-dev
+
 script:
-  cd src && make test
+  cd src && make tests

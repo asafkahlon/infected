@@ -117,7 +117,7 @@ static void __decoder_size_state(struct infected_decoder *decoder)
 		return;
 	}
 	__decoder_consume(decoder, sizeof(size) + sizeof(hec));
-	debug_print("size=%hd, HEC=%hd\n", size, hec);
+	debug_print("size=%hd, HEC=%hhd\n", size, hec);
 
 	if (size < INFECTED_CONTENT_HEADER_SIZE + INFECTED_CRC_SIZE) {
 		/* Incomplete frame */

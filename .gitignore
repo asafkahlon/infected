@@ -53,3 +53,8 @@ dkms.conf
 
 # Editors
 .vscode/
+
+# Autotools
+*.scan
+*.log
+*.cache
