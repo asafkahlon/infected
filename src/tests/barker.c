@@ -68,9 +68,32 @@ static void test_barker_across_writes(void)
 	assert_barker_found(d);
 }
 
+static void test_barker_across_boundaries(void)
+{
+	struct infected_decoder d;
+	char buf[INFECTED_MIN_FRAME_SIZE];
+	char data[] = {
+		0xfe, 0xfe, 0xfe, 0xfe,
+		0xfe, 0xfe, 0xfe, 0xfe,
+		0xfe, 0xfe, 0xfe, 0xca, 0xfe
+	};
+	char *last = &data[sizeof(data) - 1];
+	size_t ret;
+	
+	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, NULL);
+	/* write all but the last byte */
+	ret = infected_decoder_write(&d, data, sizeof(data) - 1);
+	CU_ASSERT_EQUAL(ret, INFECTED_MIN_FRAME_SIZE);
+	CU_ASSERT_EQUAL(d.state, BARKER);
+	CU_ASSERT_EQUAL(infected_decoder_read_next(&d), 1);
+	infected_decoder_write(&d, last, 1);
+	assert_barker_found(d);
+}
+
 const CU_TestInfo barker_tests[] = {
 	{"No Barker", test_no_barker},
 	{"Valid Barker", test_barker_valid},
 	{"Barker Across Writes", test_barker_across_writes},
+	{"Barker Across Buffer Boundaries", test_barker_across_boundaries},
 	CU_TEST_INFO_NULL
 };

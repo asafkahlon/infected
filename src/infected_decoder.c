@@ -114,6 +114,7 @@ static void __decoder_size_state(struct infected_decoder *decoder)
 		 * valid frame.
 		 */
 		__decoder_reset_state(decoder);
+		__on_error(decoder, HEC_ERROR);
 		return;
 	}
 	__decoder_consume(decoder, sizeof(size) + sizeof(hec));
