@@ -1,16 +1,17 @@
 PROJDIR = ../..
 IDIR = $(PROJDIR)/include
 
-CFLAGS = -I$(IDIR) -I$(PROJDIR)/src -fPIC -Wall -Wextra -g # C flags
+CFLAGS += -I$(IDIR) -I$(PROJDIR)/src -fPIC -Wall -Wextra -g # C flags
 LDFLAGS = -L$(PROJDIR)/src -linfected_decoder -lcunit # linking flags
 
-SUITES = general.o barker.o
+DEPS = frames.h $(IDIR)/log.h
+SUITES = general.o barker.o size.o frame.o
 MAIN = main.out
 
-%.o: %.c
+%.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(MAIN): main.c tests.h $(SUITES)
+$(MAIN): main.c $(SUITES)
 	$(CC) -o $@ $< $(SUITES) $(CFLAGS) $(LDFLAGS)
 
 .PHONY: all

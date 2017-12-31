@@ -1,13 +1,14 @@
 IDIR =../include
 ODIR=obj
 
-CFLAGS = -I$(IDIR) -fPIC -Wall -Wextra -O2 -g # C flags
+CFLAGS += -I$(IDIR) -fPIC -Wall -Wextra -O2 -g # C flags
 LDFLAGS = -shared  # linking flags
 
 LIBDECODER = libinfected_decoder.so
 
-_DEPS = infected_decoder.h
+_DEPS = infected_decoder.h log.h
 DEPS := $(patsubst %,$(IDIR)/%,$(_DEPS))
+DEPS += infected_decoder_private.h
 
 _OBJS = infected_decoder.o
 OBJS := $(patsubst %,$(ODIR)/%,$(_OBJS))

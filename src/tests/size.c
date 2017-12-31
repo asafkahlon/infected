@@ -1,6 +1,6 @@
 #include <CUnit/CUnit.h>
 
-#include "debug.h"
+#include "log.h"
 #include "infected_decoder.h"
 #include "infected_decoder_private.h"
 
@@ -9,7 +9,7 @@ static enum infected_decoder_error s_error;
 
 static void on_error(struct infected_decoder *decoder, enum infected_decoder_error error)
 {
-	debug_print("on error called with error: %d\n", error);
+	print_debug("on error called with error: %d\n", error);
 	s_error = error;
 }
 

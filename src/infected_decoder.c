@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <errno.h>
 
-#include "debug.h"
+#include "log.h"
 #include "infected_decoder.h"
 #include "infected_decoder_private.h"
 
@@ -23,18 +23,12 @@ static inline void __decoder_reset_state(struct infected_decoder *decoder)
 {
 	decoder->state = BARKER;
 	decoder->required_bytes = sizeof(infected_barker);
-	decoder->frame.content = NULL;
-	decoder->frame.size = 0;
-}
-
-static inline size_t __decoder_available_bytes(struct infected_decoder *decoder)
-{
-	return (size_t)(decoder->write_head - decoder->read_head);
+	infected_frame_reset(&decoder->frame);
 }
 
 static inline void __decoder_consume(struct infected_decoder *decoder, size_t size)
 {
-	debug_print("want to consume %zu bytes, available %zu\n",
+	print_debug("want to consume %zu bytes, available %zu\n",
 		size, __decoder_available_bytes(decoder));
 	assert(size <= __decoder_available_bytes(decoder));
 	decoder->read_head += size;
@@ -47,6 +41,7 @@ static size_t __decoder_write(struct infected_decoder *decoder,
 
 	memcpy(decoder->write_head, buf, to_add);
 	decoder->write_head += to_add;
+	print_debug("added %zu/%zu bytes", to_add, size);
 	return to_add;
 }
 
@@ -72,10 +67,10 @@ static void __decoder_find_barker(struct infected_decoder *decoder)
 {
 	int missing;
 
-	debug_print("read head: 0x%hhx%hhx\n", decoder->read_head[0], decoder->read_head[1]);
+	print_debug("read head: 0x%hhx%hhx\n", decoder->read_head[0], decoder->read_head[1]);
 	if (decoder->read_head[0] == infected_barker[0] &&
 			decoder->read_head[1] == infected_barker[1]) {
-		debug_print("%s\n", "Barker found");
+		print_debug("%s\n", "Barker found");
 		__decoder_realign(decoder);
 		__decoder_consume(decoder, sizeof(infected_barker));
 		decoder->state = SIZE;
@@ -83,7 +78,7 @@ static void __decoder_find_barker(struct infected_decoder *decoder)
 		return;
 	}
 
-	debug_print("%s\n", "Barker not found");
+	print_debug("%s\n", "Barker not found");
 	missing = (decoder->read_head[1] == infected_barker[0]) ? 1 : sizeof(infected_barker);
 	__decoder_consume(decoder, missing);
 
@@ -106,7 +101,7 @@ static void __decoder_size_state(struct infected_decoder *decoder)
 	hec = *(uint8_t *)(decoder->read_head + sizeof(uint16_t));
 
 	if (__decoder_verify_size(decoder, &size, hec)) {
-		debug_print("%s\n", "Size corrupted beyond repair");
+		print_error("%s\n", "Size corrupted beyond repair");
 		/**
 		 * Reset the state, but don't discard any data. As long as the
 		 * size is not verified, we are still looking for a frame.
@@ -118,11 +113,11 @@ static void __decoder_size_state(struct infected_decoder *decoder)
 		return;
 	}
 	__decoder_consume(decoder, sizeof(size) + sizeof(hec));
-	debug_print("size=%hd, HEC=%hhd\n", size, hec);
+	print_debug("size=%hd, HEC=%hhd\n", size, hec);
 
 	if (size < INFECTED_CONTENT_HEADER_SIZE + INFECTED_CRC_SIZE) {
 		/* Incomplete frame */
-		debug_print("incomplete frame, size=%hd\n", size);
+		print_error("incomplete frame, size=%hd\n", size);
 		__decoder_reset_state(decoder);
 		__on_error(decoder, INVALID_SIZE);
 		return;
@@ -131,7 +126,7 @@ static void __decoder_size_state(struct infected_decoder *decoder)
 	if (size > infected_decoder_free_space(decoder) +
 			__decoder_available_bytes(decoder)) {
 		/* Frame cannot fit in the given buffer */
-		debug_print("frame too big, size=%hd\n", size);
+		print_error("frame too big, size=%hd\n", size);
 		__decoder_reset_state(decoder);
 		__on_error(decoder, INVALID_SIZE);
 		return;
@@ -160,12 +155,12 @@ static void __decoder_read_content(struct infected_decoder *decoder)
 	__decoder_consume(decoder, sizeof(crc));
 
 	if (__verify_crc(decoder->frame.content, decoder->frame.size, crc)) {
-		debug_print("%s\n", "CRC Error");
+		print_error("CRC Error. Received 0x%hx Expected 0x%hx\n", crc, 0);
 		__on_error(decoder, CRC_ERROR);
 		goto out;
 	}
 
-	debug_print("%s\n", "valid frame found");
+	print_debug("%s\n", "valid frame found");
 	if (decoder->on_frame) {
 		decoder->on_frame(decoder, decoder->frame);
 	}
@@ -177,8 +172,8 @@ out:
 void __decoder_decode(struct infected_decoder *decoder)
 {
 	while (__decoder_available_bytes(decoder) >= decoder->required_bytes) {
-		debug_print("available data: %zu bytes\n", __decoder_available_bytes(decoder));
-		debug_print("required: %zu bytes\n", decoder->required_bytes);
+		print_debug("available data: %zu bytes\n", __decoder_available_bytes(decoder));
+		print_debug("required: %zu bytes\n", decoder->required_bytes);
 		switch (decoder->state) {
 		case BARKER:
 			__decoder_find_barker(decoder);

@@ -1,7 +1,15 @@
 #include <CUnit/CUnit.h>
 
+#include "log.h"
 #include "infected_decoder.h"
 #include "infected_decoder_private.h"
+
+static enum infected_decoder_error s_error;
+static void on_error(struct infected_decoder *decoder, enum infected_decoder_error error)
+{
+	print_debug("on error called with error: %d\n", error);
+	s_error = error;
+}
 
 static inline void assert_barker_found(struct infected_decoder decoder)
 {
@@ -42,9 +50,9 @@ static void test_no_barker(void)
 	char buf[INFECTED_MIN_FRAME_SIZE];
 	char no_start[] = {0xfe, 0xfe, 0xfe, 0xfe, 0xfe};
 	unsigned long i;
-	
+
 	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, NULL);
-	
+
 	for (i = 0; i < sizeof(no_start); i++) {
 		infected_decoder_reset(&d);
 		infected_decoder_write(&d, no_start, i);
@@ -58,7 +66,7 @@ static void test_barker_across_writes(void)
 	char buf[INFECTED_MIN_FRAME_SIZE];
 	char data[] = {0xfe, 0xfe, 0xfe, 0xca, 0xfe};
 	char *last = &data[sizeof(data) - 1];
-	
+
 	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, NULL);
 	/* write all but the last byte */
 	infected_decoder_write(&d, data, sizeof(data) - 1);
@@ -66,6 +74,22 @@ static void test_barker_across_writes(void)
 	CU_ASSERT_EQUAL(infected_decoder_read_next(&d), 1);
 	infected_decoder_write(&d, last, 1);
 	assert_barker_found(d);
+}
+
+static void test_double_barker(void)
+{
+	struct infected_decoder d;
+	char buf[INFECTED_MIN_FRAME_SIZE];
+	char data[] = {0xca, 0xfe, 0xca, 0xfe, 0xaa};
+	char *last = &data[sizeof(data) - 1];
+
+	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, on_error);
+	s_error = NO_ERROR;
+	infected_decoder_write(&d, data, sizeof(data));
+	CU_ASSERT_EQUAL(d.state, SIZE);
+	CU_ASSERT_EQUAL(s_error, HEC_ERROR);
+	CU_ASSERT_EQUAL(infected_decoder_read_next(&d), 2);
+	CU_ASSERT_EQUAL(*d.read_head, *last);
 }
 
 static void test_barker_across_boundaries(void)
@@ -79,7 +103,7 @@ static void test_barker_across_boundaries(void)
 	};
 	char *last = &data[sizeof(data) - 1];
 	size_t ret;
-	
+
 	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, NULL);
 	/* write all but the last byte */
 	ret = infected_decoder_write(&d, data, sizeof(data) - 1);
@@ -94,6 +118,7 @@ const CU_TestInfo barker_tests[] = {
 	{"No Barker", test_no_barker},
 	{"Valid Barker", test_barker_valid},
 	{"Barker Across Writes", test_barker_across_writes},
+	{"Double Barker", test_double_barker},
 	{"Barker Across Buffer Boundaries", test_barker_across_boundaries},
 	CU_TEST_INFO_NULL
 };

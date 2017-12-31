@@ -22,4 +22,9 @@ struct infected_decoder {
 
 extern char infected_barker[2];
 
+static inline size_t __decoder_available_bytes(struct infected_decoder *decoder)
+{
+	return (size_t)(decoder->write_head - decoder->read_head);
+}
+
 #endif /* INFECTED_DECODER_PRIVATE_H */

@@ -34,6 +34,12 @@ struct infected_frame {
 	uint16_t size; /* The size of the payload */
 };
 
+static inline void infected_frame_reset(struct infected_frame *frame)
+{
+	frame->content = NULL;
+	frame->size = 0;
+}
+
 /* Opaque type */
 struct infected_decoder;
 
@@ -45,10 +51,10 @@ struct infected_decoder;
 size_t infected_decoder_size(void);
 
 typedef void (*infected_decoder_valid_frame_cb)
-	(struct infected_decoder * decoder, struct infected_frame frame);
+	(struct infected_decoder *decoder, struct infected_frame frame);
 
 typedef void (*infected_decoder_error_cb)
-	(struct infected_decoder * decoder, enum infected_decoder_error error);
+	(struct infected_decoder *decoder, enum infected_decoder_error error);
 
 /**
  * Initialize infected decoder object.

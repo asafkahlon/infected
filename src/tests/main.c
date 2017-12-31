@@ -10,10 +10,13 @@
 extern CU_TestInfo barker_tests[];
 extern CU_TestInfo general_tests[];
 extern CU_TestInfo size_tests[];
+extern CU_TestInfo frame_tests[];
+
 static CU_SuiteInfo suites[] = {
 	{"General", NULL, NULL, NULL, NULL, general_tests},
 	{"Barker", NULL, NULL, NULL, NULL, barker_tests},
 	{"Size", NULL, NULL, NULL, NULL, size_tests},
+	{"Frame", NULL, NULL, NULL, NULL, frame_tests},
 	CU_SUITE_INFO_NULL,
 };
 

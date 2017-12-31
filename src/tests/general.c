@@ -1,6 +1,6 @@
 #include <CUnit/CUnit.h>
 
-#include "debug.h"
+#include "log.h"
 #include "infected_decoder.h"
 #include "infected_decoder_private.h"
 
@@ -40,7 +40,7 @@ void test_free_space(void)
 	for (i = 0; i < sizeof(buf); i++) {
 		infected_decoder_reset(&d);
 		infected_decoder_write(&d, buf, i);
-		debug_print("free space: %zu\n\n", infected_decoder_free_space(&d));
+		print_debug("free space: %zu\n\n", infected_decoder_free_space(&d));
 		CU_ASSERT_EQUAL(infected_decoder_free_space(&d), sizeof(buf) - i);
 		CU_ASSERT_PTR_EQUAL(d.write_head, d.buf + i);
 	}
