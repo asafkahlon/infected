@@ -2,6 +2,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <arpa/inet.h>
 
 #include "log.h"
 #include "infected_decoder.h"

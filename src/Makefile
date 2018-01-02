@@ -1,6 +1,8 @@
 IDIR =../include
 ODIR=obj
 
+DESTDIR=/usr/local
+
 CFLAGS += -I$(IDIR) -fPIC -Wall -Wextra -O2 -g # C flags
 LDFLAGS = -shared  # linking flags
 
@@ -19,10 +21,24 @@ $(ODIR)/%.o: %.c $(DEPS)
 $(LIBDECODER): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
+all: $(LIBDECODER)
+
+.PHONY: install
+install: $(LIBDECODER)
+	install -d $(DESTDIR)/lib/
+	install -v $(LIBDECODER) $(DESTDIR)/lib/$(LIBDECODER)
+	install -d $(DESTDIR)/include/infected
+	install -v $(IDIR)/*.h $(DESTDIR)/include/infected
+
+.PHONY: uninstall
+uninstall:
+	rm -vf $(DESTDIR)/lib/$(LIBDECODER)
+	rm -vrf $(DESTDIR)/include/infected
+
 .PHONY: tests
 tests: $(LIBDECODER)
 	$(MAKE) -C $@ clean all
 
 .PHONY: clean
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ 
+	rm -vf $(ODIR)/*.o *~ core $(INCDIR)/*~ 

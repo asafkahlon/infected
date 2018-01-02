@@ -1,3 +1,5 @@
+#include <arpa/inet.h>
+
 #include <CUnit/CUnit.h>
 
 #include "log.h"

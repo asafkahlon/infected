@@ -1,9 +1,10 @@
+#include <arpa/inet.h>
+
 #include <CUnit/CUnit.h>
 
 #include "log.h"
 #include "infected_decoder.h"
 #include "infected_decoder_private.h"
-
 #include "frames.h"
 
 struct frame_attrs {

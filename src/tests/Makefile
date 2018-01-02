@@ -16,7 +16,7 @@ $(MAIN): main.c $(SUITES)
 
 .PHONY: all
 all: $(MAIN)
-	DYLD_LIBRARY_PATH=$(PROJDIR)/src ./$(MAIN)
+	DYLD_LIBRARY_PATH=$(PROJDIR)/src LD_LIBRARY_PATH=$(PROJDIR)/src ./$(MAIN)
 
 .PHONY: clean
 clean:

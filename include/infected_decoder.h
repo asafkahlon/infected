@@ -1,7 +1,7 @@
 #ifndef INFECTED_DECODER_H
 #define INFECTED_DECODER_H
 
-#include <stdlib.h>
+#include <stdint.h>
 
 #define INFECTED_BARKER_SIZE sizeof(uint16_t)
 #define INFECTED_CRC_SIZE sizeof(uint16_t)
