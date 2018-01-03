@@ -3,6 +3,7 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
 
+#include "log.h"
 #include "infected_decoder.h"
 #include "infected_decoder_private.h"
 
@@ -22,6 +23,8 @@ static CU_SuiteInfo suites[] = {
 
 int main()
 {
+	unsigned int failed;
+
 	/* initialize the CUnit test registry */
 	if (CUE_SUCCESS != CU_initialize_registry())
 		goto out;
@@ -31,9 +34,10 @@ int main()
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
+	failed = CU_get_number_of_tests_failed();
 
 err_cleanup:
 	CU_cleanup_registry();
 out:
-	return CU_get_error();
+	return CU_get_error() || failed;
 }

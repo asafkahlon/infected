@@ -42,3 +42,4 @@ tests: $(LIBDECODER)
 .PHONY: clean
 clean:
 	rm -vf $(ODIR)/*.o *~ core $(INCDIR)/*~ 
+	$(MAKE) -C tests clean

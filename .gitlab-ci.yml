@@ -1,0 +1,13 @@
+image: docker:latest
+
+stages:
+  - test
+
+before_script:
+  - docker info
+
+build:
+  stage: build
+  script:
+    - docker build -t infected .
+    - docker run -t infected
