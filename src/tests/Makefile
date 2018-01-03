@@ -20,5 +20,4 @@ all: $(MAIN)
 
 .PHONY: clean
 clean:
-	rm -f *.o
-	rm -f $(MAIN)
+	rm -vrf *.o $(MAIN) *.dSYM

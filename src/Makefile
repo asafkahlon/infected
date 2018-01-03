@@ -15,7 +15,10 @@ DEPS += infected_decoder_private.h
 _OBJS = infected_decoder.o
 OBJS := $(patsubst %,$(ODIR)/%,$(_OBJS))
 
-$(ODIR)/%.o: %.c $(DEPS)
+$(ODIR):
+	mkdir -p $@
+
+$(ODIR)/%.o: %.c $(DEPS) $(ODIR)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(LIBDECODER): $(OBJS)
@@ -41,5 +44,5 @@ tests: $(LIBDECODER)
 
 .PHONY: clean
 clean:
-	rm -vf $(ODIR)/*.o *~ core $(INCDIR)/*~ 
+	rm -vrf $(ODIR) *~ $(INCDIR)/*~
 	$(MAKE) -C tests clean
