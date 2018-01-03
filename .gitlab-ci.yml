@@ -1,8 +1,5 @@
 image: docker:latest
 
-stages:
-  - test
-
 before_script:
   - docker info
 
