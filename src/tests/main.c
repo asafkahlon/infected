@@ -1,11 +1,7 @@
 #include <stdio.h>
-#include <errno.h>
+
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
-
-#include "log.h"
-#include "infected_decoder.h"
-#include "infected_decoder_private.h"
 
 
 extern CU_TestInfo barker_tests[];
@@ -23,7 +19,7 @@ static CU_SuiteInfo suites[] = {
 
 int main()
 {
-	unsigned int failed;
+	unsigned int failed = 0;
 
 	/* initialize the CUnit test registry */
 	if (CUE_SUCCESS != CU_initialize_registry())

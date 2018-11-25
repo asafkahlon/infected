@@ -18,8 +18,8 @@ static void on_error(struct infected_decoder *decoder, enum infected_decoder_err
 static void sanity(void)
 {
 	struct infected_decoder d;
-	char buf[INFECTED_MIN_FRAME_SIZE];
-	char data[] = {0xca, 0xfe, 0x0, 0x7, 0x0};
+	uint8_t buf[INFECTED_MIN_FRAME_SIZE];
+	uint8_t data[] = {0xca, 0xfe, 0x0, 0x7, 0x0};
 
 	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, NULL);
 	infected_decoder_write(&d, data, sizeof(data));
@@ -30,15 +30,15 @@ static void sanity(void)
 static void test_invalid_size(uint16_t size)
 {
 	struct infected_decoder d;
-	char buf[INFECTED_MIN_FRAME_SIZE];
+	uint8_t buf[INFECTED_MIN_FRAME_SIZE];
 	const uint8_t hec = 0;
 
 	s_error = NO_ERROR;
 	size = htons(size);
 	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, on_error);
 	infected_decoder_write(&d, infected_barker, sizeof(infected_barker));
-	infected_decoder_write(&d, (char *)&size, sizeof(size));
-	infected_decoder_write(&d, (char *)&hec, sizeof(hec));
+	infected_decoder_write(&d, (uint8_t *)&size, sizeof(size));
+	infected_decoder_write(&d, (uint8_t *)&hec, sizeof(hec));
 	CU_ASSERT_EQUAL(d.state, BARKER);
 	CU_ASSERT_EQUAL(s_error, INVALID_SIZE);
 	s_error = NO_ERROR;
@@ -57,15 +57,15 @@ static void size_too_small(void)
 static void corrupted_size_unfixable(void)
 {
 	struct infected_decoder d;
-	char buf[INFECTED_MIN_FRAME_SIZE];
+	uint8_t buf[INFECTED_MIN_FRAME_SIZE];
 	const uint8_t hec = 1;
 	const uint16_t size = htons(INFECTED_MIN_FRAME_SIZE - INFECTED_FRAME_HEADER_SIZE);
 
 	s_error = NO_ERROR;
 	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, on_error);
 	infected_decoder_write(&d, infected_barker, sizeof(infected_barker));
-	infected_decoder_write(&d, (char *)&size, sizeof(size));
-	infected_decoder_write(&d, (char *)&hec, sizeof(hec));
+	infected_decoder_write(&d, (uint8_t *)&size, sizeof(size));
+	infected_decoder_write(&d, (uint8_t *)&hec, sizeof(hec));
 	CU_ASSERT_EQUAL(d.state, BARKER);
 	CU_ASSERT_EQUAL(s_error, HEC_ERROR);
 	s_error = NO_ERROR;

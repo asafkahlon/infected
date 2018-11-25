@@ -8,7 +8,7 @@
 #include "frames.h"
 
 struct frame_attrs {
-	char *payload;
+	uint8_t *payload;
 	size_t payload_size;
 	uint16_t dst;
 	uint16_t src;
@@ -25,7 +25,7 @@ static inline void expect_error(enum infected_decoder_error error)
 }
 
 static inline void expect_frame(unsigned int index, uint16_t dst, uint16_t src,
-		 uint8_t flags, char *payload, size_t payload_size)
+		 uint8_t flags, uint8_t *payload, size_t payload_size)
 {
 	s_expected_frames[index].dst = dst;
 	s_expected_frames[index].src = src;
@@ -56,7 +56,7 @@ static void on_frame(struct infected_decoder *decoder, struct infected_frame fra
 static void test_bad_crc(void)
 {
 	struct infected_decoder d;
-	char buf[INFECTED_MIN_FRAME_SIZE];
+	uint8_t buf[INFECTED_MIN_FRAME_SIZE];
 
 	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, on_error);
 
@@ -68,7 +68,7 @@ static void test_bad_crc(void)
 static void test_empty_frame(void)
 {
 	struct infected_decoder d;
-	char buf[INFECTED_MAX_FRAME_SIZE];
+	uint8_t buf[INFECTED_MAX_FRAME_SIZE];
 
 	s_frame_counter = 0;
 	expect_error(NO_ERROR);
@@ -84,8 +84,8 @@ static void test_empty_frame(void)
 static void test_several_frames_in_buffer(void)
 {
 	struct infected_decoder d;
-	char buf[INFECTED_MAX_FRAME_SIZE];
-	char payload[] = {0x11, 0x22, 0x33, 0x44};
+	uint8_t buf[INFECTED_MAX_FRAME_SIZE];
+	uint8_t payload[] = {0x11, 0x22, 0x33, 0x44};
 
 	expect_error(NO_ERROR);
 	infected_decoder_init(&d, buf, sizeof(buf), on_frame, on_error);

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include <errno.h>
 #include <arpa/inet.h>
 
 #include "log.h"
@@ -18,7 +17,7 @@
 		__typeof__ (b) _b = (b); \
 		_a <= _b ? _a : _b; })
 
-char infected_barker[2] = {0xca, 0xfe};
+uint8_t infected_barker[2] = {0xca, 0xfe};
 
 static inline void __decoder_reset_state(struct infected_decoder *decoder)
 {
@@ -36,7 +35,7 @@ static inline void __decoder_consume(struct infected_decoder *decoder, size_t si
 }
 
 static size_t __decoder_write(struct infected_decoder *decoder,
-		const char *buf, size_t size)
+		const uint8_t *buf, size_t size)
 {
 	size_t to_add = min(size, infected_decoder_free_space(decoder));
 
@@ -55,7 +54,7 @@ static inline void __on_error(struct infected_decoder *decoder,
 
 static inline void __decoder_realign(struct infected_decoder *decoder)
 {
-	char *p = decoder->read_head;
+    uint8_t *p = decoder->read_head;
 	size_t size = decoder->write_head - p;
 
 	if (p == decoder->buf || !size)
@@ -66,7 +65,7 @@ static inline void __decoder_realign(struct infected_decoder *decoder)
 
 static void __decoder_find_barker(struct infected_decoder *decoder)
 {
-	int missing;
+	size_t missing;
 
 	print_debug("read head: 0x%hhx%hhx\n", decoder->read_head[0], decoder->read_head[1]);
 	if (decoder->read_head[0] == infected_barker[0] &&
@@ -156,7 +155,7 @@ static void __decoder_read_content(struct infected_decoder *decoder)
 	__decoder_consume(decoder, sizeof(crc));
 
 	if (__verify_crc(decoder->frame.content, decoder->frame.size, crc)) {
-		print_error("CRC Error. Received 0x%hx Expected 0x%hx\n", crc, 0);
+		print_error("CRC Error. Received 0x%hx Expected 0x0\n", crc);
 		__on_error(decoder, CRC_ERROR);
 		goto out;
 	}
@@ -190,10 +189,6 @@ void __decoder_decode(struct infected_decoder *decoder)
 			break;
 		}
 	}
-
-	if (decoder->state == BARKER && decoder->read_head != decoder->buf) {
-
-	}
 }
 
 inline size_t infected_decoder_read_next(struct infected_decoder *decoder)
@@ -201,7 +196,7 @@ inline size_t infected_decoder_read_next(struct infected_decoder *decoder)
 	return decoder->required_bytes - __decoder_available_bytes(decoder);
 }
 
-inline char * infected_decoder_write_head(struct infected_decoder *decoder)
+inline uint8_t * infected_decoder_write_head(struct infected_decoder *decoder)
 {
 	return decoder->write_head;
 }
@@ -213,7 +208,7 @@ inline size_t infected_decoder_free_space(struct infected_decoder *decoder)
 
 int infected_decoder_init(
 		struct infected_decoder *decoder,
-		char *buf, size_t size,
+		uint8_t *buf, size_t size,
 		infected_decoder_valid_frame_cb on_frame,
 		infected_decoder_error_cb on_error)
 {
@@ -225,7 +220,7 @@ int infected_decoder_init(
 
 void infected_decoder_set_buffer(
 		struct infected_decoder *decoder,
-		char *buf, size_t size)
+        uint8_t *buf, size_t size)
 {
 	assert(size >= INFECTED_MIN_FRAME_SIZE);
 	decoder->buf = buf;
@@ -249,7 +244,7 @@ void infected_decoder_mark_write(struct infected_decoder *decoder, size_t size)
 }
 
 size_t infected_decoder_write(struct infected_decoder *decoder,
-		const char *buf, size_t size)
+		const uint8_t *buf, size_t size)
 {
 	size_t ret = __decoder_write(decoder, buf, size);
 

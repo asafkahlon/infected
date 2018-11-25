@@ -6,12 +6,12 @@
 
 /**
  * Test that when writing more data than the decoder's buffer can hold, no
- * buffer overflow ocurres.
+ * buffer overflow occurs.
  */
 void test_write_overflow(void)
 {
 	struct infected_decoder d;
-	char buf[] = {
+	uint8_t buf[] = {
 		0xca, 0xfe, 0x0, 0x7,
 		0x0, 0xff, 0xff, 0xaa,
 		0xaa, 0x0, 0x11, 0x22,
@@ -28,7 +28,7 @@ void test_write_overflow(void)
 void test_free_space(void)
 {
 	struct infected_decoder d;
-	char buf[] = {
+	uint8_t buf[] = {
 		0xca, 0xfe, 0x0, 0x7,
 		0x0, 0xff, 0xff, 0xaa,
 		0xaa, 0x0, 0x0, 0x0

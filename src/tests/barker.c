@@ -25,13 +25,13 @@ static inline void assert_barker_found(struct infected_decoder decoder)
 static void test_barker_valid(void)
 {
 	struct infected_decoder d;
-	char buf[INFECTED_MIN_FRAME_SIZE];
+	uint8_t buf[INFECTED_MIN_FRAME_SIZE];
 	unsigned int i;
 
-	char case_a[] = {0xca, 0xfe};
-	char case_b[] = {0xca, 0xca, 0xfe};
-	char case_c[] = {0xfe, 0xca, 0xca, 0xca, 0xfe};
-	char *test_data[] = {case_a, case_b, case_c};
+	uint8_t case_a[] = {0xca, 0xfe};
+	uint8_t case_b[] = {0xca, 0xca, 0xfe};
+	uint8_t case_c[] = {0xfe, 0xca, 0xca, 0xca, 0xfe};
+	uint8_t *test_data[] = {case_a, case_b, case_c};
 	/* Ugh, figure out a better way to do this */
 	int sizes[] = {sizeof case_a, sizeof case_b, sizeof case_c};
 
@@ -47,8 +47,8 @@ static void test_barker_valid(void)
 static void test_no_barker(void)
 {
 	struct infected_decoder d;
-	char buf[INFECTED_MIN_FRAME_SIZE];
-	char no_start[] = {0xfe, 0xfe, 0xfe, 0xfe, 0xfe};
+	uint8_t buf[INFECTED_MIN_FRAME_SIZE];
+	uint8_t no_start[] = {0xfe, 0xfe, 0xfe, 0xfe, 0xfe};
 	unsigned long i;
 
 	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, NULL);
@@ -63,9 +63,9 @@ static void test_no_barker(void)
 static void test_barker_across_writes(void)
 {
 	struct infected_decoder d;
-	char buf[INFECTED_MIN_FRAME_SIZE];
-	char data[] = {0xfe, 0xfe, 0xfe, 0xca, 0xfe};
-	char *last = &data[sizeof(data) - 1];
+	uint8_t buf[INFECTED_MIN_FRAME_SIZE];
+	uint8_t data[] = {0xfe, 0xfe, 0xfe, 0xca, 0xfe};
+	uint8_t *last = &data[sizeof(data) - 1];
 
 	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, NULL);
 	/* write all but the last byte */
@@ -79,9 +79,9 @@ static void test_barker_across_writes(void)
 static void test_double_barker(void)
 {
 	struct infected_decoder d;
-	char buf[INFECTED_MIN_FRAME_SIZE];
-	char data[] = {0xca, 0xfe, 0xca, 0xfe, 0xaa};
-	char *last = &data[sizeof(data) - 1];
+	uint8_t buf[INFECTED_MIN_FRAME_SIZE];
+	uint8_t data[] = {0xca, 0xfe, 0xca, 0xfe, 0xaa};
+	uint8_t *last = &data[sizeof(data) - 1];
 
 	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, on_error);
 	s_error = NO_ERROR;
@@ -95,13 +95,13 @@ static void test_double_barker(void)
 static void test_barker_across_boundaries(void)
 {
 	struct infected_decoder d;
-	char buf[INFECTED_MIN_FRAME_SIZE];
-	char data[] = {
+	uint8_t buf[INFECTED_MIN_FRAME_SIZE];
+	uint8_t data[] = {
 		0xfe, 0xfe, 0xfe, 0xfe,
 		0xfe, 0xfe, 0xfe, 0xfe,
 		0xfe, 0xfe, 0xfe, 0xca, 0xfe
 	};
-	char *last = &data[sizeof(data) - 1];
+	uint8_t *last = &data[sizeof(data) - 1];
 	size_t ret;
 
 	infected_decoder_init(&d, buf, INFECTED_MIN_FRAME_SIZE, NULL, NULL);

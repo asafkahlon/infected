@@ -13,7 +13,7 @@
 #define INFECTED_MAX_FRAME_SIZE 1600
 
 #define ARRAY_SIZE(array) \
-	(sizeof(array) / sizeof(array[0]))
+	(sizeof(array) / sizeof((array)[0]))
 
 enum infected_decoder_error {
 	NO_ERROR = 0,
@@ -71,7 +71,7 @@ typedef void (*infected_decoder_error_cb)
  */
 int infected_decoder_init(
 		struct infected_decoder *decoder,
-		char *buf, size_t size,
+        uint8_t *buf, size_t size,
 		infected_decoder_valid_frame_cb on_frame,
 		infected_decoder_error_cb on_error);
 
@@ -82,7 +82,7 @@ int infected_decoder_init(
  */
 void infected_decoder_set_buffer(
 		struct infected_decoder *decoder,
-		char *buf, size_t size);
+        uint8_t *buf, size_t size);
 
 /**
  * Resets the decoder to its initial state.
@@ -90,7 +90,7 @@ void infected_decoder_set_buffer(
  */
 void infected_decoder_reset(struct infected_decoder *decoder);
 
-char * infected_decoder_write_head(struct infected_decoder *decoder);
+uint8_t * infected_decoder_write_head(struct infected_decoder *decoder);
 
 size_t infected_decoder_read_next(struct infected_decoder *decoder);
 
@@ -106,7 +106,7 @@ size_t infected_decoder_free_space(struct infected_decoder *decoder);
  * @return: How many bytes were actually added. If there is not enough space in
  * 	the decoder's buffer, not all the data will be added.
  */
-size_t infected_decoder_write(struct infected_decoder *decoder, const char *buf, size_t size);
+size_t infected_decoder_write(struct infected_decoder *decoder, const uint8_t *buf, size_t size);
 
 /**
  * Tells the decoder that `size` bytes have been written to its buffer.
